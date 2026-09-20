@@ -1,0 +1,23 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+const fs = require('node:fs');
+const path = require('node:path');
+test('voice levels follow microphone energy; PCM and flush stay intact', () => {
+  let Processor; const messages = [];
+  const context = { Float32Array, Math, AudioWorkletProcessor: class { constructor() { this.port = { postMessage: value => messages.push(value) }; } }, registerProcessor: (_, value) => { Processor = value; } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/recorder-worklet.js'), 'utf8'), context);
+  const processor = new Processor();
+  const frame = amplitude => new Float32Array(128).fill(amplitude);
+  for (let i = 0; i < 5; i++) processor.process([[frame(0)]]);
+  assert.equal(messages.at(-1).level, 0);
+  for (let i = 0; i < 5; i++) processor.process([[frame(.02)]]);
+  const quiet = messages.at(-1).level;
+  for (let i = 0; i < 5; i++) processor.process([[frame(.2)]]);
+  assert.ok(messages.at(-1).level > quiet);
+  for (let i = 0; i < 5; i++) processor.process([[frame(0)]]);
+  assert.equal(messages.at(-1).level, 0);
+  processor.port.onmessage({ data: 'flush' });
+  assert.equal(messages.at(-1), 'flushed');
+  assert.equal(messages.filter(m => m instanceof Float32Array).reduce((n, a) => n + a.length, 0), 2560);
+});

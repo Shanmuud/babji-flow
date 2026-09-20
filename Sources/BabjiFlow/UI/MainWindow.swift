@@ -13,8 +13,12 @@ final class Navigation: ObservableObject {
 }
 
 struct MainWindow: View {
+    @AppStorage("onboardingCompleteV2") private var onboardingComplete = false
     @ObservedObject var nav = Navigation.shared
     var body: some View {
+        if !onboardingComplete { OnboardingView() } else { workspace }
+    }
+    private var workspace: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {

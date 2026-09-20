@@ -15,6 +15,7 @@ cp "$BIN" "$APP/Contents/MacOS/BabjiFlow"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 [ -f Resources/AppIcon.icns ] && cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp -R Resources/Babji "$APP/Contents/Resources/Babji"
+cp -R Resources/Scenes "$APP/Contents/Resources/Scenes"
 # SwiftPM resource bundles (FluidAudio ships one)
 for b in .build/$CONFIG/*.bundle; do [ -d "$b" ] && cp -R "$b" "$APP/Contents/Resources/"; done
 # Sign with the stable local identity (see sign-setup.sh) so permission grants survive rebuilds;

@@ -4,14 +4,31 @@ A free, local-first Wispr Flow alternative for macOS. Hold a key, talk, release:
 
 See `plan.html` for the architecture and feature plan.
 
-## Requirements
+## Start here: choose your computer
+
+| Your computer | Build | Setup |
+|---|---|---|
+| Apple Silicon Mac, macOS 14+ | Native macOS app; no Windows components required | [Mac guide](docs/GETTING_STARTED.md#macos) |
+| Windows 10/11 x64 | Windows preview | [Windows guide](docs/GETTING_STARTED.md#windows) |
+
+Check [Releases](https://github.com/Shrit1401/babji-flow/releases) for published packages. If no installer is listed, use the source-build instructions. A source ZIP is not an installer.
+
+The [download-page source](docs/download/index.html) recommends the visitor's platform without automatically downloading anything. It can be hosted after these guides are merged. See the [contributor learning roadmap](docs/CONTRIBUTING_GUIDE.md) for modules, feature ideas and PR checks.
+
+The requirements and feature list below describe **macOS**. Windows support and differences are documented separately.
+
+## Windows preview
+
+A Windows desktop port is available in [`windows/`](windows/README.md). It preserves the main UI and core dictation workflow using local Whisper/ONNX speech recognition, Windows shortcuts, and foreground-aware paste. Open `windows/release/win-unpacked/Babji Flow.exe` after building, or use `windows/Start Babji Flow.cmd` for development. The [Windows guide](windows/README.md) lists supported features, remaining differences from macOS, and test commands.
+
+## macOS requirements
 
 - Apple Silicon Mac, macOS 14+ (macOS 26 recommended for free on-device AI polish via Apple Intelligence)
 - Swift toolchain (Command Line Tools are enough, no Xcode needed)
 - ~700 MB disk for the Parakeet speech model (downloaded once from HuggingFace)
 - Optional: an OpenAI API key (default provider) or Claude key for meeting summaries, transcript chat and extra dictation polish
 
-## Build and run
+## Build and run on macOS
 
 ```sh
 ./build.sh

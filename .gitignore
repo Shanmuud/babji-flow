@@ -5,3 +5,6 @@ build/
 .swiftpm/
 Vendor/NemoTextProcessing/
 Vendor/nemo.zip
+windows/node_modules/
+windows/release/
+windows/test-artifacts/

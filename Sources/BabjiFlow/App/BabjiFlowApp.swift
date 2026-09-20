@@ -65,8 +65,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSLog("BabjiFlow launched; accessibility=\(Permissions.accessibilityGranted)")
         for sc in NSScreen.screens { NSLog("screen \(sc.localizedName) frame=\(sc.frame) safeTop=\(sc.safeAreaInsets.top) auxL=\(String(describing: sc.auxiliaryTopLeftArea)) auxR=\(String(describing: sc.auxiliaryTopRightArea))") }
-        Transcriber.shared.ensureLoaded()
-        VocabularyBooster.shared.start()
+        if UserDefaults.standard.bool(forKey: "onboardingCompleteV2") {
+            Transcriber.shared.ensureLoaded()
+            VocabularyBooster.shared.start()
+        }
         Transcriber.shared.$state.receive(on: DispatchQueue.main).sink { st in
             NSLog("Transcriber state: \(st)")
             switch st {
@@ -80,6 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }.store(in: &subs)
         Task {
+            guard UserDefaults.standard.bool(forKey: "onboardingCompleteV2") else { return }
             let ok = await MicRecorder.requestPermission()
             NSLog("Mic permission: \(ok)")
             if !ok { NotchController.shared.show(.error("Microphone access denied. Enable it in System Settings."), autoHideAfter: 5) }
@@ -106,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let i = CommandLine.arguments.firstIndex(of: "--open"), i + 1 < CommandLine.arguments.count, let p = Page(rawValue: CommandLine.arguments[i + 1]) {
             openMain(p)
-        } else if Settings.shared.launchCount == 1 { openMain(.home) }
+        } else if !UserDefaults.standard.bool(forKey: "onboardingCompleteV2") { openMain(.home) }
     }
 
     private func micChanged(_ inUse: Bool) {
