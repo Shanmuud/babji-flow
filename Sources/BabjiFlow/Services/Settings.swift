@@ -1,0 +1,206 @@
+import Foundation
+import Security
+import Combine
+
+enum HotkeyChoice: String, CaseIterable, Identifiable, Codable {
+    case fn, rightOption, rightCommand, leftControl
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .fn: return "fn (Globe)"
+        case .rightOption: return "Right Option ⌥"
+        case .rightCommand: return "Right Command ⌘"
+        case .leftControl: return "Left Control ⌃"
+        }
+    }
+}
+
+enum ModelChoice: String, CaseIterable, Identifiable, Codable {
+    case v2, v3
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .v2: return "Parakeet TDT v2 · English (best accuracy)"
+        case .v3: return "Parakeet TDT v3 · 25 languages"
+        }
+    }
+}
+
+enum PolishEngine: String, CaseIterable, Identifiable, Codable {
+    case none, apple, claude, auto
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .none: return "Fluid only · Parakeet + NeMo normaliser + rules (offline, default)"
+        case .apple: return "Fluid + Apple Intelligence polish (on-device)"
+        case .claude: return "Fluid + AI polish (OpenAI / Claude)"
+        case .auto: return "Fluid + whichever polish is available"
+        }
+    }
+}
+
+enum StyleCategory: String, CaseIterable, Identifiable, Codable {
+    case personal, work, email, other
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .personal: return "Personal messages"
+        case .work: return "Work messages"
+        case .email: return "Email"
+        case .other: return "Other"
+        }
+    }
+    var blurb: String {
+        switch self {
+        case .personal: return "This style applies in personal messengers"
+        case .work: return "This style applies in work chat apps"
+        case .email: return "This style applies in email clients"
+        case .other: return "This style applies everywhere else"
+        }
+    }
+}
+
+enum Tone: String, CaseIterable, Identifiable, Codable {
+    case formal, casual, veryCasual
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .formal: return "Formal."
+        case .casual: return "Casual"
+        case .veryCasual: return "very casual"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .formal: return "Caps + Punctuation"
+        case .casual: return "Caps + Less punctuation"
+        case .veryCasual: return "No Caps + Less punctuation"
+        }
+    }
+    var sample: String {
+        switch self {
+        case .formal: return "Hey, are you free for lunch tomorrow? Let's do 12 if that works for you."
+        case .casual: return "Hey are you free for lunch tomorrow? Let's do 12 if that works for you"
+        case .veryCasual: return "hey are you free for lunch tomorrow? let's do 12 if that works for you"
+        }
+    }
+}
+
+final class Settings: ObservableObject {
+    static let shared = Settings()
+    private let d = UserDefaults.standard
+
+    @Published var hotkey: HotkeyChoice { didSet { d.set(hotkey.rawValue, forKey: "hotkey") } }
+    @Published var model: ModelChoice { didSet { d.set(model.rawValue, forKey: "model") } }
+    @Published var polishEngine: PolishEngine { didSet { d.set(polishEngine.rawValue, forKey: "polish") } }
+    @Published var autoCleanup: Bool { didSet { d.set(autoCleanup, forKey: "autoCleanup") } }
+    @Published var meetingDetection: Bool { didSet { d.set(meetingDetection, forKey: "meetingDetection") } }
+    @Published var autoLearn: Bool { didSet { d.set(autoLearn, forKey: "autoLearn") } }
+    @Published var styleSample: String { didSet { d.set(styleSample, forKey: "styleSample") } }
+    @Published var tones: [StyleCategory: Tone] { didSet { saveTones() } }
+    @Published var appCategories: [String: StyleCategory] { didSet { saveApps() } }
+    @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
+    @Published var hasClaudeKey: Bool = false
+    @Published var provider: AIProvider { didSet { d.set(provider.rawValue, forKey: "provider") } }
+    @Published var hasOpenAIKey: Bool = false
+    @Published var openaiModel: String { didSet { d.set(openaiModel, forKey: "openaiModel") } }
+    @Published var openaiFastModel: String { didSet { d.set(openaiFastModel, forKey: "openaiFastModel") } }
+    @Published var claudeWorkspace: String { didSet { d.set(claudeWorkspace, forKey: "claudeWorkspace") } }
+    @Published var lastPolishError: String?
+    @Published var launchCount: Int { didSet { d.set(launchCount, forKey: "launchCount") } }
+
+    private init() {
+        hotkey = HotkeyChoice(rawValue: d.string(forKey: "hotkey") ?? "") ?? .fn
+        model = ModelChoice(rawValue: d.string(forKey: "model") ?? "") ?? .v2
+        polishEngine = PolishEngine(rawValue: d.string(forKey: "polish") ?? "") ?? .none
+        autoCleanup = d.object(forKey: "autoCleanup") as? Bool ?? true
+        meetingDetection = d.object(forKey: "meetingDetection") as? Bool ?? true
+        autoLearn = d.object(forKey: "autoLearn") as? Bool ?? true
+        styleSample = d.string(forKey: "styleSample") ?? ""
+        claudeModel = d.string(forKey: "claudeModel") ?? "claude-opus-5"
+        provider = AIProvider(rawValue: d.string(forKey: "provider") ?? "") ?? .openai
+        openaiModel = d.string(forKey: "openaiModel") ?? "gpt-5.5"
+        openaiFastModel = d.string(forKey: "openaiFastModel") ?? "gpt-5.4-mini"
+        claudeWorkspace = d.string(forKey: "claudeWorkspace") ?? ""
+        launchCount = d.integer(forKey: "launchCount")
+        tones = [:]
+        appCategories = [:]
+        if let data = d.data(forKey: "tones"), let t = try? JSONDecoder().decode([StyleCategory: Tone].self, from: data) {
+            tones = t
+        } else {
+            tones = [.personal: .veryCasual, .work: .casual, .email: .formal, .other: .casual]
+        }
+        if let data = d.data(forKey: "appCategories"), let a = try? JSONDecoder().decode([String: StyleCategory].self, from: data) {
+            appCategories = a
+        } else {
+            appCategories = Settings.defaultAppCategories
+        }
+        hasClaudeKey = Keychain.exists("claude_api_key")
+        hasOpenAIKey = Keychain.exists("openai_api_key")
+    }
+
+    private func saveTones() { if let data = try? JSONEncoder().encode(tones) { d.set(data, forKey: "tones") } }
+    private func saveApps() { if let data = try? JSONEncoder().encode(appCategories) { d.set(data, forKey: "appCategories") } }
+
+    var claudeKey: String? { Keychain.read("claude_api_key") }
+    var openaiKey: String? { Keychain.read("openai_api_key") }
+    func setOpenAIKey(_ key: String) {
+        let k = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if k.isEmpty { Keychain.delete("openai_api_key") } else { Keychain.write("openai_api_key", k) }
+        hasOpenAIKey = !k.isEmpty
+    }
+    func setClaudeKey(_ key: String) {
+        let k = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if k.isEmpty { Keychain.delete("claude_api_key") } else { Keychain.write("claude_api_key", k) }
+        hasClaudeKey = !k.isEmpty
+    }
+
+    func tone(for category: StyleCategory) -> Tone { tones[category] ?? .casual }
+
+    func category(forBundle bundle: String?) -> StyleCategory {
+        guard let bundle else { return .other }
+        return appCategories[bundle] ?? .other
+    }
+
+    static let defaultAppCategories: [String: StyleCategory] = [
+        "net.whatsapp.WhatsApp": .personal, "ru.keepcoder.Telegram": .personal, "com.hnc.Discord": .personal,
+        "com.apple.MobileSMS": .personal, "org.whispersystems.signal-desktop": .personal, "com.facebook.archon": .personal,
+        "com.tinyspeck.slackmacgap": .work, "com.microsoft.teams2": .work, "com.linear": .work, "notion.id": .work,
+        "com.apple.mail": .email, "com.microsoft.Outlook": .email, "com.readdle.smartemail-Mac": .email, "com.superhuman.electron": .email,
+    ]
+
+    static let appSupport: URL = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = base.appendingPathComponent("BabjiFlow", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+}
+
+enum Keychain {
+    static let service = "com.babji.flow"
+    /// Attribute-only query: does not touch the secret, so it never triggers a Keychain prompt.
+    static func exists(_ account: String) -> Bool {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecAttrAccount as String: account, kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        var item: CFTypeRef?
+        return SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess
+    }
+    static func read(_ account: String) -> String? {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecAttrAccount as String: account, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+    static func write(_ account: String, _ value: String) {
+        delete(account)
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecAttrAccount as String: account, kSecValueData as String: Data(value.utf8)]
+        SecItemAdd(q as CFDictionary, nil)
+    }
+    static func delete(_ account: String) {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
+        SecItemDelete(q as CFDictionary)
+    }
+}

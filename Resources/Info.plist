@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Babji Flow</string>
+  <key>CFBundleDisplayName</key><string>Babji Flow</string>
+  <key>CFBundleIdentifier</key><string>com.babji.flow</string>
+  <key>CFBundleExecutable</key><string>BabjiFlow</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSMicrophoneUsageDescription</key><string>Babji Flow listens while you hold the hotkey so it can type what you say, and records meetings when you ask it to.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>Speech is transcribed on-device.</string>
+  <key>NSAppleEventsUsageDescription</key><string>Used to paste dictated text into the active app.</string>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><false/></dict>
+</dict>
+</plist>

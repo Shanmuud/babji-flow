@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Babji Flow Plan</title>
+<meta name="description" content="Architecture and build plan for Babji Flow, a free local-first Wispr Flow alternative for macOS.">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4f0;--panel:#ffffff;--ink:#1a1816;--muted:#6b6560;--line:#e6e1da;
+  --accent:#7c5cff;--accent-soft:#efeaff;--ok:#1f8a4c;--warn:#b8641a;--chip:#f0ece6;
+  --hero1:#2b2420;--hero2:#5a3f2e;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141210;--panel:#1d1a17;--ink:#f1ede7;--muted:#a09a92;--line:#2c2722;
+    --accent:#a38bff;--accent-soft:#2a2340;--chip:#26221e;--hero1:#0f0d0b;--hero2:#3a2a20;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141210;--panel:#1d1a17;--ink:#f1ede7;--muted:#a09a92;--line:#2c2722;
+  --accent:#a38bff;--accent-soft:#2a2340;--chip:#26221e;--hero1:#0f0d0b;--hero2:#3a2a20;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55}
+main{max-width:920px;margin:0 auto;padding:40px 16px 80px}
+h1,h2,h3{font-weight:600;letter-spacing:-.01em}
+h1{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:44px;margin:0 0 6px}
+h1 em{font-style:italic;color:var(--accent)}
+h2{font-size:22px;margin:44px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:22px 0 8px}
+p{margin:8px 0}
+.sub{color:var(--muted);font-size:16px;margin-bottom:24px}
+.hero{border-radius:18px;padding:28px;color:#fff;background:linear-gradient(120deg,var(--hero1),var(--hero2));margin:8px 0 16px}
+.hero h2{border:0;margin:0 0 6px;color:#fff;font-family:"Instrument Serif",serif;font-weight:400;font-size:30px}
+.hero p{color:#e8dfd6;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h3{margin-top:0}
+.card ul{padding-left:18px;margin:6px 0}
+li{margin:4px 0}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+code{background:var(--chip);padding:2px 6px;border-radius:6px}
+pre{background:var(--chip);padding:14px;border-radius:12px;overflow-x:auto;line-height:1.45}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:3px 10px;font-size:12px;margin:2px 4px 2px 0;color:var(--muted)}
+.chip.ok{background:#e4f5ea;color:var(--ok)}
+.chip.rec{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.chip.warn{background:#fbeede;color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.flow .step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+.flow .arrow{color:var(--muted)}
+.notch{margin:16px auto;width:min(420px,100%);height:38px;border-radius:0 0 22px 22px;background:#0a0a0a;display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.bars{display:flex;gap:3px;align-items:center;height:18px}
+.bars i{display:block;width:3px;background:#fff;border-radius:2px;animation:b 1s infinite ease-in-out}
+.bars i:nth-child(2){animation-delay:.1s}.bars i:nth-child(3){animation-delay:.2s}.bars i:nth-child(4){animation-delay:.3s}.bars i:nth-child(5){animation-delay:.4s}
+@keyframes b{0%,100%{height:4px}50%{height:18px}}
+.phase{display:flex;gap:14px;margin:12px 0}
+.phase .n{flex:0 0 32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>Babji <em>Flow</em></h1>
+<p class="sub">A free, local-first voice keyboard and meeting notetaker for macOS. Same feel as Wispr Flow, no subscription, your audio never leaves the Mac unless you ask Claude to summarize a meeting.</p>
+
+<div class="hero">
+  <h2>Flow spells the way <em>you</em> do. Babji Flow types the way you do.</h2>
+  <p>Hold a key, talk, release. Clean text lands in whatever app is focused, in your style, with your words spelled right. Open a call and it offers to take notes.</p>
+</div>
+
+<h2>1. What we are building</h2>
+<div class="grid">
+  <div class="card"><h3>Voice keyboard</h3><ul>
+    <li>Hold <b>fn</b> (or a chosen key) to dictate into any app</li>
+    <li>Notch pill at the top of the screen shows listening, thinking, done</li>
+    <li>Filler removal, self-correction handling, auto punctuation, lists, paragraphs</li>
+    <li>Spoken commands: "new line", "new paragraph", "bullet point", "scratch that"</li>
+  </ul></div>
+  <div class="card"><h3>Dictionary that learns</h3><ul>
+    <li>Manual entries: names, jargon, product names</li>
+    <li>Auto-learn: after you paste, Babji reads the field back and diffs. If you corrected a word, it proposes a dictionary entry (sparkle = learned)</li>
+    <li>Entries feed both dictation and meeting transcripts</li>
+  </ul></div>
+  <div class="card"><h3>Style per app</h3><ul>
+    <li>Personal messages, Work messages, Email, Other</li>
+    <li>Formal / Casual / Very casual (no caps, less punctuation)</li>
+    <li>App is detected by bundle ID (WhatsApp, Telegram, Discord, Slack, Mail, ...)</li>
+    <li>Auto cleanup toggle and a custom "how I write" sample</li>
+  </ul></div>
+  <div class="card"><h3>Insights</h3><ul>
+    <li>Words dictated, time spoken, words per minute</li>
+    <li>Time saved vs typing at 40 wpm, streak, top apps</li>
+    <li>Daily chart for the last 30 days</li>
+  </ul></div>
+  <div class="card"><h3>Notetaker</h3><ul>
+    <li>"Meeting detected" bar appears when another app opens your mic</li>
+    <li>Records mic + system audio, diarizes speakers locally</li>
+    <li>Summary: overview, themed sections, next steps, decisions</li>
+    <li>Full transcript with speakers and timestamps, rename speakers</li>
+    <li>Chat with the transcript ("what did they ask me to do?")</li>
+  </ul></div>
+  <div class="card"><h3>Menu bar + settings</h3><ul>
+    <li>Lives in the menu bar, no dock icon by default</li>
+    <li>Settings: hotkey, model, style, Claude API key, permissions</li>
+    <li>All data in <code>~/Library/Application Support/BabjiFlow</code> as JSON</li>
+  </ul></div>
+</div>
+
+<h2>2. Model choice: which speech model, and why</h2>
+<p>You asked for the "fluid voice model". That is <b>FluidAudio</b>, a Swift package from FluidInference that runs NVIDIA's <b>Parakeet</b> models as CoreML on the Apple Neural Engine. It is free, offline, and fast on an M2 with 8 GB. It also ships speaker diarization and voice activity detection, which is exactly what the notetaker needs.</p>
+<table>
+  <tr><th>Model</th><th>Languages</th><th>Size</th><th>Verdict</th></tr>
+  <tr><td>Parakeet TDT 0.6B <b>v2</b></td><td>English only</td><td>~600 MB</td><td><span class="chip rec">Recommended for you</span> Best English accuracy and recall. Trained on 120k hours of English. Best at casual speech, names, Indian-English accents in our testing notes.</td></tr>
+  <tr><td>Parakeet TDT 0.6B <b>v3</b></td><td>25 European languages</td><td>~600 MB</td><td><span class="chip ok">Available in settings</span> Use if you dictate in other languages. Slightly lower English accuracy than v2.</td></tr>
+  <tr><td>Whisper (large / turbo)</td><td>99 languages</td><td>1.5 GB+</td><td><span class="chip warn">Not used</span> Slower, more RAM, hallucinates on silence. Only wins for Hindi/Hinglish, which Parakeet does not cover.</td></tr>
+</table>
+<p class="small">Default: <b>v2</b>. You can switch to v3 in Settings; the model is downloaded once from HuggingFace and cached.</p>
+
+<h3>Text cleanup ("the Wispr magic")</h3>
+<p>Raw STT output is not what you want typed. A three-layer pipeline turns it into clean text:</p>
+<div class="flow">
+  <span class="step">Parakeet raw text</span><span class="arrow">→</span>
+  <span class="step">Rules: fillers, commands, self-corrections, numbers</span><span class="arrow">→</span>
+  <span class="step">Dictionary replacements</span><span class="arrow">→</span>
+  <span class="step">LLM polish in your style</span><span class="arrow">→</span>
+  <span class="step">Paste</span>
+</div>
+<table>
+  <tr><th>Polish engine</th><th>Cost</th><th>When used</th></tr>
+  <tr><td>Apple Foundation Models (on-device, macOS 26)</td><td>Free</td><td>Default when Apple Intelligence is enabled. Handles punctuation, casing, style, list formatting.</td></tr>
+  <tr><td>Claude API (Opus 5)</td><td>Paid, your key</td><td>Optional for dictation. Required for meeting summaries and transcript chat (transcripts are too long for the on-device model's 4k context).</td></tr>
+  <tr><td>Rules only</td><td>Free</td><td>Fallback if neither is available. Still removes fillers, applies commands and dictionary.</td></tr>
+</table>
+
+<h2>3. The notch</h2>
+<div class="notch"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div><span>Listening…</span></div>
+<p>A borderless, always-on-top <code>NSPanel</code> anchored to the top center of the screen, drawn in black with rounded bottom corners so it looks like it slides out of the physical notch. States: idle (hidden), listening (live level bars from the mic), processing (spinner), done (checkmark then hides), and the meeting-detected state (red dot, "Record" and "Dismiss" buttons).</p>
+
+<h2>4. Architecture</h2>
+<pre>Sources/BabjiFlow/
+  App/          BabjiFlowApp.swift     menu bar app, windows, AppDelegate
+  Audio/        MicRecorder.swift      AVAudioEngine → 16 kHz mono Float32
+                SystemAudioCapture.swift  ScreenCaptureKit audio of other apps
+                MicActivityMonitor.swift  CoreAudio "device running somewhere" → meeting detected
+  STT/          Transcriber.swift      FluidAudio AsrManager (v2/v3), batch transcribe
+                SpeakerDiarizer.swift  FluidAudio DiarizerManager → speaker segments
+  Cleanup/      RuleCleaner.swift      fillers, commands, corrections, numbers
+                DictionaryStore.swift  entries + auto-learned entries
+                StylePolisher.swift    FoundationModels / Claude / none
+                CorrectionLearner.swift  AX read-back diff → proposals
+  Input/        HotkeyMonitor.swift    fn / configurable key via CGEventTap
+                TextInjector.swift     pasteboard + Cmd-V, restores clipboard
+                FrontmostApp.swift     bundle ID → style category
+  Notch/        NotchPanel.swift, NotchView.swift
+  Meeting/      MeetingRecorder.swift  mixes mic + system, writes WAV
+                MeetingStore.swift     meetings, transcripts, summaries (JSON)
+                Summarizer.swift       Claude structured summary
+                TranscriptChat.swift   Claude chat grounded in transcript
+  Insights/     StatsStore.swift       per-dictation records, aggregates
+  Services/     ClaudeClient.swift     raw HTTPS to /v1/messages (streaming)
+                Settings.swift         UserDefaults + Keychain for the API key
+  UI/           MainWindow, Home, Dictionary, Style, Notetaker, Insights, Settings views
+build.sh        swift build → BabjiFlow.app bundle with Info.plist, ad-hoc signed</pre>
+
+<h3>Key mechanisms</h3>
+<ul>
+  <li><b>Hotkey:</b> a global <code>flagsChanged</code> tap catches fn / right option. Hold to talk, release to finish. Requires Accessibility permission (the app guides you to it).</li>
+  <li><b>Paste:</b> saves your clipboard, writes the text, sends Cmd-V, restores the clipboard after 300 ms.</li>
+  <li><b>Auto-learn:</b> 4 seconds after pasting, the focused text field's value is read through the Accessibility API and word-diffed against what was pasted. A replaced word with small edit distance becomes a learned dictionary entry (marked with a sparkle, one-click to delete).</li>
+  <li><b>Meeting detection:</b> CoreAudio property <code>kAudioDevicePropertyDeviceIsRunningSomewhere</code> on the default input flips true when Zoom, Meet, FaceTime, etc. open the mic. Babji ignores its own sessions.</li>
+  <li><b>Meeting audio:</b> mic via AVAudioEngine, other apps via ScreenCaptureKit (needs Screen Recording permission). Both resampled to 16 kHz and mixed. Diarization runs on the mixed track after the meeting ends; each transcript segment is assigned the dominant speaker.</li>
+  <li><b>Summary:</b> Claude Opus 5 with a JSON output schema: title, overview, sections (heading + bullets), next steps (owner + action), decisions. Prompted to be terse and factual like your sample.</li>
+  <li><b>Chat:</b> transcript is placed in the system prompt with prompt caching so follow-up questions are cheap.</li>
+</ul>
+
+<h2>5. Permissions the app will ask for</h2>
+<table>
+  <tr><th>Permission</th><th>Why</th></tr>
+  <tr><td>Microphone</td><td>Dictation and meeting recording</td></tr>
+  <tr><td>Accessibility</td><td>Global hotkey, Cmd-V injection, reading the field back to learn corrections</td></tr>
+  <tr><td>Screen Recording</td><td>Capturing the other side of a call (system audio). Only needed for the notetaker.</td></tr>
+</table>
+
+<h2>6. Build phases</h2>
+<div class="phase"><div class="n">1</div><div><b>Skeleton + notch + dictation loop.</b> Package, app bundle script, menu bar, hotkey, mic capture, Parakeet v2 transcription, paste. Rule cleaner and dictionary.</div></div>
+<div class="phase"><div class="n">2</div><div><b>Style + LLM polish + auto-learn.</b> Style presets per app category, Foundation Models polish, Claude fallback, Accessibility read-back learner, Insights store.</div></div>
+<div class="phase"><div class="n">3</div><div><b>Notetaker.</b> Mic activity monitor, meeting bar, recorder with system audio, diarization, Claude summary and chat, Notetaker UI.</div></div>
+<div class="phase"><div class="n">4</div><div><b>Polish.</b> Settings, onboarding for permissions, first-run model download progress, README.</div></div>
+
+<h2>7. Running it</h2>
+<pre>./build.sh          # builds BabjiFlow.app into ./build
+open build/BabjiFlow.app
+# first launch downloads Parakeet v2 (~600 MB) and shows progress in the notch</pre>
+<p class="small">Claude API key: paste it in Settings. It is stored in the macOS Keychain. Without it, dictation still works fully; meeting summaries and chat show a prompt to add the key.</p>
+</main>
+</body>
+</html>
