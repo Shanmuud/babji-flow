@@ -38,7 +38,7 @@ final class DictationController: ObservableObject {
         if !t.isReady {
             switch t.state {
             case .downloading(let p, let label): NotchController.shared.show(.downloading(p, label), autoHideAfter: 3)
-            case .loading: NotchController.shared.show(.processing("Loading speech model…"), autoHideAfter: 2)
+            case .loading: NotchController.shared.show(.processing("Building"), autoHideAfter: 2)
             case .failed(let e): NotchController.shared.show(.error("Model failed: \(e)"), autoHideAfter: 4); t.ensureLoaded()
             default: t.ensureLoaded()
             }
@@ -66,7 +66,7 @@ final class DictationController: ObservableObject {
         let seconds = Double(samples.count) / 16000
         guard seconds > 0.35 else { NotchController.shared.hide(); return }
         busy = true
-        NotchController.shared.show(.processing("Transcribing…"))
+        NotchController.shared.show(.processing("Thinking"))
         let bundle = targetBundle, appName = targetName ?? "Unknown"
         Task {
             defer { busy = false }
@@ -81,7 +81,7 @@ final class DictationController: ObservableObject {
                 let category = Settings.shared.category(forBundle: bundle)
                 let tone = Settings.shared.tone(for: category)
                 if Settings.shared.autoCleanup {
-                    NotchController.shared.show(.processing("Polishing…"))
+                    NotchController.shared.show(.processing("Polishing"))
                     text = await StylePolisher.polish(text, tone: tone, category: category)
                 } else {
                     text = StylePolisher.fallback(text, tone: tone)

@@ -52,8 +52,8 @@ struct HomeView: View {
     var statusLine: String {
         switch transcriber.state {
         case .ready: return "Speech runs fully on this Mac with Parakeet. Text is cleaned up in your style and pasted into the app you're in."
-        case .downloading(let p, let l): return "\(l) \(Int(p * 100))%"
-        case .loading: return "Loading the speech model…"
+        case .downloading(let p, let l): return "\(l)… \(Int(p * 100))%. First launch only."
+        case .loading: return "Building… almost there."
         case .failed(let e): return "Model failed to load: \(e)"
         case .idle: return "Starting…"
         }
@@ -61,8 +61,8 @@ struct HomeView: View {
     var modelLabel: String {
         switch transcriber.state {
         case .ready: return "Parakeet \(settings.model.rawValue) ready"
-        case .downloading(let p, let l): return (l.hasPrefix("Compiling") ? "Preparing model " : "Downloading ") + "\(Int(p * 100))%"
-        case .loading: return "Loading model"
+        case .downloading(let p, let l): return "\(l) \(Int(p * 100))%"
+        case .loading: return "Building"
         case .failed: return "Model failed"
         case .idle: return "Model idle"
         }

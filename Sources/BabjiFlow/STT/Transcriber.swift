@@ -39,15 +39,15 @@ final class Transcriber: ObservableObject {
     }
 
     private func load(version: ModelChoice) async {
-        state = .downloading(0, "Checking model…")
+        state = .downloading(0, "Getting ready")
         let asrVersion: AsrModelVersion = version == .v2 ? .v2 : .v3
         do {
             let models = try await AsrModels.downloadAndLoad(version: asrVersion, progressHandler: { p in
                 let label: String
                 switch p.phase {
-                case .listing: label = "Finding model files…"
-                case .downloading(let done, let total): label = "Downloading Parakeet \(version.rawValue) (\(done)/\(total))"
-                case .compiling(let name): label = "Compiling \(name)…"
+                case .listing: label = "Getting ready"
+                case .downloading: label = "Downloading voice"
+                case .compiling: label = "Building"
                 }
                 Task { @MainActor in
                     if case .downloading(let old, let oldLabel) = self.state, oldLabel == label, abs(p.fractionCompleted - old) < 0.01 { return }

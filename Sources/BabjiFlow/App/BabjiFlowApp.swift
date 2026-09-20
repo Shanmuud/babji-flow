@@ -70,10 +70,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("Transcriber state: \(st)")
             switch st {
             case .downloading(let p, let l): NotchController.shared.show(.downloading(p, l))
-            case .loading: NotchController.shared.show(.processing("Loading speech model…"))
+            case .loading: NotchController.shared.show(.processing("Building"))
             case .ready:
-                if case .downloading = NotchController.shared.state { NotchController.shared.show(.done("Babji Flow is ready"), autoHideAfter: 2) }
-                else if case .processing = NotchController.shared.state { NotchController.shared.show(.done("Babji Flow is ready"), autoHideAfter: 2) }
+                if case .downloading = NotchController.shared.state { NotchController.shared.show(.done("Ready"), autoHideAfter: 1.5) }
+                else if case .processing = NotchController.shared.state { NotchController.shared.show(.done("Ready"), autoHideAfter: 1.5) }
             case .failed(let e): NotchController.shared.show(.error(e), autoHideAfter: 6)
             case .idle: break
             }

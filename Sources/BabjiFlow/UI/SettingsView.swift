@@ -70,8 +70,8 @@ struct SettingsView: View {
     var modelStatus: String {
         switch transcriber.state {
         case .ready: return "Loaded. Models are cached in ~/Library/Application Support/FluidAudio."
-        case .downloading(let p, let l): return "\(l) \(Int(p * 100))%"
-        case .loading: return "Loading…"
+        case .downloading(let p, let l): return "\(l)… \(Int(p * 100))%"
+        case .loading: return "Building…"
         case .failed(let e): return "Failed: \(e)"
         case .idle: return "Not loaded"
         }

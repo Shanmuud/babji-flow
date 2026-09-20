@@ -96,15 +96,16 @@ final class NotchController: ObservableObject {
         // How far the pill extends beyond each side of the notch.
         let side: CGFloat
         switch state {
-        case .listening: side = 120
-        case .processing, .downloading: side = 150
-        case .done, .error: side = 190
-        case .meetingDetected: side = 210
-        case .meetingRecording: side = 130
+        case .listening: side = 58
+        case .processing: side = 58
+        case .downloading: side = 96
+        case .done, .error: side = 150
+        case .meetingDetected: side = 168
+        case .meetingRecording: side = 96
         case .hidden: side = 0
         }
-        let width = gap + side * 2 + (gap == 0 ? 40 : 0) + 56   // room for Babji on the right
-        let height = barHeight + 26                                // Babji hangs a little below the pill
+        let width = gap + side * 2 + (gap == 0 ? 40 : 0)
+        let height = barHeight + 12                                // Babji's chin dips just below the bar
         let x = screen.frame.midX - width / 2
         panel.setFrame(NSRect(x: x, y: screen.frame.maxY - height, width: width, height: height), display: true)
     }
@@ -114,15 +115,15 @@ struct NotchView: View {
     @EnvironmentObject var c: NotchController
 
     private var shape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(cornerRadii: .init(topLeading: 0, bottomLeading: 18, bottomTrailing: 18, topTrailing: 0))
+        UnevenRoundedRectangle(cornerRadii: .init(topLeading: 0, bottomLeading: 14, bottomTrailing: 14, topTrailing: 0))
     }
 
     var body: some View {
         ZStack(alignment: .top) {
-            pill.frame(height: c.barHeight + 10)
+            pill.frame(height: c.barHeight + 4)
             // Babji peeks over the bottom edge of the pill, hands on the ledge.
-            HStack { Spacer(); BabjiFace(mood: BabjiMood.forNotch(c.state), height: c.barHeight + 22).padding(.trailing, 10) }
-                .frame(height: c.barHeight + 26, alignment: .bottom)
+            HStack { Spacer(); BabjiFace(mood: BabjiMood.forNotch(c.state), height: c.barHeight + 4).padding(.trailing, 8) }
+                .frame(height: c.barHeight + 12, alignment: .bottom)
                 .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
                 .id(BabjiMood.forNotch(c.state))
         }
@@ -134,18 +135,18 @@ struct NotchView: View {
         ZStack {
             shape.fill(Color.black)
             // soft colour wash on the right, like a glow leaking out of the notch
-            shape.fill(LinearGradient(colors: [.clear, .clear, tint.opacity(0.55)], startPoint: .leading, endPoint: .trailing))
-                .blur(radius: 10).padding(4).mask(shape)
+            shape.fill(LinearGradient(colors: [.clear, .clear, tint.opacity(0.28)], startPoint: .leading, endPoint: .trailing))
+                .blur(radius: 8).padding(3).mask(shape)
             shape.strokeBorder(Color.white.opacity(0.07), lineWidth: 0.6)
             HStack(spacing: 0) {
-                leading.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 16)
+                leading.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 12)
                 if c.gap > 0 { Color.clear.frame(width: c.gap) }
-                trailing.frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 70)
+                trailing.frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 48)
             }
             .frame(height: c.barHeight)
             .frame(maxHeight: .infinity, alignment: .top)
-            .foregroundStyle(.white)
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.92))
+            .font(.system(size: 11.5, weight: .medium, design: .rounded))
         }
     }
 
@@ -162,30 +163,30 @@ struct NotchView: View {
     @ViewBuilder private var leading: some View {
         switch c.state {
         case .hidden: EmptyView()
-        case .listening: Text("Listening")
-        case .processing(let s): Text(s).lineLimit(1)
-        case .done(let t): HStack(spacing: 7) { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.mint); Text(t).lineLimit(1).truncationMode(.tail) }
-        case .error(let e): HStack(spacing: 7) { Image(systemName: "exclamationmark.circle.fill").foregroundStyle(Theme.coral); Text(e).lineLimit(1) }
-        case .downloading(_, let label): Text(label).lineLimit(1)
-        case .meetingDetected(let app): HStack(spacing: 8) { Pulse(color: Theme.coral); Text("Meeting" + (app.isEmpty ? "" : " · \(app)")).lineLimit(1) }
-        case .meetingRecording: HStack(spacing: 8) { Pulse(color: Theme.coral); Text(format(c.meetingElapsed)).monospacedDigit() }
+        case .listening: LevelBars(level: c.level)
+        case .processing: Dots()
+        case .done(let t): HStack(spacing: 6) { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.mint); Text(t).lineLimit(1).truncationMode(.tail) }
+        case .error(let e): HStack(spacing: 6) { Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11)).foregroundStyle(Theme.coral); Text(e).lineLimit(1) }
+        case .downloading(let p, _):
+            HStack(spacing: 8) {
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.14)).frame(width: 54, height: 3)
+                    Capsule().fill(Theme.accentGradient).frame(width: max(3, 54 * p), height: 3)
+                }
+                Text("Building").foregroundStyle(.white.opacity(0.7))
+            }
+        case .meetingDetected(let app): HStack(spacing: 7) { Pulse(color: Theme.coral); Text(app.isEmpty ? "Meeting" : app).lineLimit(1) }
+        case .meetingRecording: HStack(spacing: 7) { Pulse(color: Theme.coral); Text(format(c.meetingElapsed)).monospacedDigit() }
         }
     }
 
     @ViewBuilder private var trailing: some View {
         switch c.state {
-        case .hidden, .done, .error: EmptyView()
-        case .listening: LevelBars(level: c.level)
-        case .processing: Dots()
-        case .downloading(let p, _):
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.14)).frame(width: 70, height: 4)
-                Capsule().fill(Theme.accentGradient).frame(width: max(4, 70 * p), height: 4)
-            }
+        case .hidden, .done, .error, .listening, .processing, .downloading: EmptyView()
         case .meetingDetected:
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Button("Record") { c.onRecordMeeting?() }.buttonStyle(NotchButton(primary: true))
-                Button("Dismiss") { c.onDismissMeeting?() }.buttonStyle(NotchButton(primary: false))
+                Button { c.onDismissMeeting?() } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)) }.buttonStyle(NotchButton(primary: false))
             }
         case .meetingRecording:
             Button("Stop") { c.onStopMeeting?() }.buttonStyle(NotchButton(primary: true))
@@ -226,8 +227,8 @@ struct NotchButton: ButtonStyle {
     var primary: Bool
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-            .padding(.horizontal, 11).padding(.vertical, 4)
+            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+            .padding(.horizontal, 9).padding(.vertical, 3)
             .background(Group { if primary { AnyView(Theme.accentGradient) } else { AnyView(Color.white.opacity(0.12)) } })
             .foregroundStyle(Color.white)
             .clipShape(Capsule())
@@ -250,14 +251,14 @@ struct LevelBars: View {
                         .frame(width: 3, height: height(i, t))
                 }
             }
-            .frame(height: 18)
+            .frame(height: 14)
         }
     }
     private func height(_ i: Int, _ t: Double) -> CGFloat {
         let center = Double(n - 1) / 2
         let envelope = 1 - abs(Double(i) - center) / (center + 1.2)   // taller in the middle
         let wobble = 0.5 + 0.5 * sin(t * 7 + Double(i) * 1.3)
-        let amp = CGFloat(min(1, Double(level) * 1.6)) * 14 * CGFloat(envelope) * CGFloat(0.55 + 0.45 * wobble)
+        let amp = CGFloat(min(1, Double(level) * 1.6)) * 11 * CGFloat(envelope) * CGFloat(0.55 + 0.45 * wobble)
         return 3 + amp
     }
 }
