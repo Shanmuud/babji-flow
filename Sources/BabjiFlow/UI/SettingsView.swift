@@ -21,6 +21,7 @@ struct SettingsView: View {
                         .onChange(of: settings.model) { _, _ in Transcriber.shared.ensureLoaded() }
                     Text(modelStatus).font(.system(size: 11)).foregroundStyle(Theme.muted)
                     Toggle("Detect meetings when another app opens the mic", isOn: $settings.meetingDetection)
+                    Toggle("Sound cues (soft tick on start, stop and paste)", isOn: $settings.soundCues)
                     Toggle("Command Mode (hold \(settings.hotkey.label) + Control, say an instruction, it edits the selected text)", isOn: $settings.commandMode)
                     Toggle("Context awareness (read the text around the cursor so names and sentences continue correctly)", isOn: $settings.contextAwareness)
                     Text("Hands-free: double-tap the hotkey to lock, tap again to finish, Esc to cancel.").font(.system(size: 11)).foregroundStyle(Theme.muted)

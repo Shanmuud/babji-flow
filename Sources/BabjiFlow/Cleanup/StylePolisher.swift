@@ -51,7 +51,8 @@ enum StylePolisher {
         var s = """
         You clean up voice dictation into text that will be typed into another app. Return ONLY the cleaned text, nothing else: no preamble, no quotes, no explanations.
         Rules:
-        - Keep the speaker's meaning and words. Do not add content, do not answer questions in the text, do not summarise.
+        - Correct the English: fix grammar, tense, articles, word order and awkward or non-native phrasing so it reads like a fluent native speaker wrote it, based on what the speaker clearly meant. Rewrite freely at the sentence level, but keep the meaning, the point of view, the level of detail and roughly the same length. Do not add content, do not answer questions in the text, do not summarise.
+        - Keep the speaker's own vocabulary and slang where it is intentional (e.g. "lol", "bro", "yaar"); fix it only where it is a mistake.
         - Remove filler words (um, uh, like, you know, so basically) and false starts. If the speaker corrects themselves ("no wait", "I mean", "actually"), keep only the corrected version.
         - Fix grammar lightly and add sensible punctuation. Convert spoken numbers to digits where natural (nineteen thousand -> 19,000; five pm -> 5pm).
         - If the speaker says how to format (for example "in points", "as a list", "new paragraph", "numbered list"), apply that formatting and remove the instruction itself.
@@ -65,6 +66,10 @@ enum StylePolisher {
         Output: "Three things:\n- Ship the build by Friday\n- Tell Sara about the budget, which is 19,000\n- Book the flights"
         Dictation: "hey um can you send me the deck, no wait, the figma link, before the call"
         Output: "Hey, can you send me the Figma link before the call?"
+        Dictation: "yesterday i am going to the office but the manager is not there so i am coming back, we will do meeting tomorrow only"
+        Output: "I went to the office yesterday, but the manager wasn't there, so I came back. We'll do the meeting tomorrow instead."
+        Dictation: "he is having two years experience in react and he want to join us from next month, can we do the offer"
+        Output: "He has two years of experience in React and wants to join us next month. Can we make the offer?"
         """
         switch tone {
         case .formal:

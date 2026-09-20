@@ -20,8 +20,8 @@ enum ModelChoice: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .v2: return "Parakeet TDT v2 · English (best accuracy)"
-        case .v3: return "Parakeet TDT v3 · 25 languages"
+        case .v2: return "Parakeet TDT v2 · English only"
+        case .v3: return "Parakeet TDT v3 · English + 24 languages (2.6% WER, recommended)"
         }
     }
 }
@@ -31,10 +31,10 @@ enum PolishEngine: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .none: return "Fluid only · Parakeet + NeMo normaliser + rules (offline, default)"
-        case .apple: return "Fluid + Apple Intelligence polish (on-device)"
-        case .claude: return "Fluid + AI polish (OpenAI / Claude)"
-        case .auto: return "Fluid + whichever polish is available"
+        case .auto: return "Fluid + AI polish (Apple on-device if enabled, else OpenAI/Claude) — recommended"
+        case .apple: return "Fluid + Apple Intelligence polish only (on-device)"
+        case .claude: return "Fluid + OpenAI/Claude polish only"
+        case .none: return "Fluid only · no AI polish (fully offline)"
         }
     }
 }
@@ -98,6 +98,7 @@ final class Settings: ObservableObject {
     @Published var autoLearn: Bool { didSet { d.set(autoLearn, forKey: "autoLearn") } }
     @Published var contextAwareness: Bool { didSet { d.set(contextAwareness, forKey: "contextAwareness") } }
     @Published var commandMode: Bool { didSet { d.set(commandMode, forKey: "commandMode") } }
+    @Published var soundCues: Bool { didSet { d.set(soundCues, forKey: "soundCues") } }
     @Published var styleSample: String { didSet { d.set(styleSample, forKey: "styleSample") } }
     @Published var tones: [StyleCategory: Tone] { didSet { saveTones() } }
     @Published var appCategories: [String: StyleCategory] { didSet { saveApps() } }
@@ -113,13 +114,14 @@ final class Settings: ObservableObject {
 
     private init() {
         hotkey = HotkeyChoice(rawValue: d.string(forKey: "hotkey") ?? "") ?? .fn
-        model = ModelChoice(rawValue: d.string(forKey: "model") ?? "") ?? .v2
-        polishEngine = PolishEngine(rawValue: d.string(forKey: "polish") ?? "") ?? .none
+        model = ModelChoice(rawValue: d.string(forKey: "model") ?? "") ?? .v3
+        polishEngine = PolishEngine(rawValue: d.string(forKey: "polish") ?? "") ?? .auto
         autoCleanup = d.object(forKey: "autoCleanup") as? Bool ?? true
         meetingDetection = d.object(forKey: "meetingDetection") as? Bool ?? true
         autoLearn = d.object(forKey: "autoLearn") as? Bool ?? true
         contextAwareness = d.object(forKey: "contextAwareness") as? Bool ?? true
         commandMode = d.object(forKey: "commandMode") as? Bool ?? true
+        soundCues = d.object(forKey: "soundCues") as? Bool ?? true
         styleSample = d.string(forKey: "styleSample") ?? ""
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-opus-5"
         provider = AIProvider(rawValue: d.string(forKey: "provider") ?? "") ?? .openai

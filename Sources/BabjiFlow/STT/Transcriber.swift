@@ -42,7 +42,8 @@ final class Transcriber: ObservableObject {
         state = .downloading(0, "Getting ready")
         let asrVersion: AsrModelVersion = version == .v2 ? .v2 : .v3
         do {
-            let models = try await AsrModels.downloadAndLoad(version: asrVersion, progressHandler: { p in
+            let precision: ParakeetEncoderPrecision = version == .v3 ? .int8V2 : .int8   // v3's rebuilt encoder avoids token corruption (#760)
+            let models = try await AsrModels.downloadAndLoad(version: asrVersion, encoderPrecision: precision, progressHandler: { p in
                 let label: String
                 switch p.phase {
                 case .listing: label = "Getting ready"

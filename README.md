@@ -26,8 +26,8 @@ If you use the fn key as the hotkey, set System Settings → Keyboard → "Press
 
 | Feature | How |
 |---|---|
-| Speech to text | FluidAudio + NVIDIA Parakeet TDT 0.6B v2 (English) or v3 (25 languages), CoreML on the Neural Engine, fully offline |
-| Cleanup | Fluid-only by default: Parakeet punctuation/casing → rules (fillers, "new line", "bullet point", "scratch that") → NeMo inverse text normalisation (numbers, times, money) → dictionary → tone. Optional extra polish via Apple Foundation Models or Claude |
+| Speech to text | FluidAudio + NVIDIA Parakeet TDT 0.6B v3 (default, 2.6% WER on LibriSpeech, rebuilt int8 encoder) or v2 (English only), CoreML on the Neural Engine, fully offline |
+| Cleanup | Parakeet punctuation/casing → rules (fillers, "new line", "bullet point", "scratch that", spoken enumerations) → NeMo inverse text normalisation (numbers, times, money) → dictionary → snippets → AI polish (Apple on-device if enabled, else OpenAI/Claude) that corrects grammar and phrasing from intent while keeping your tone |
 | Style | Formal / casual / very casual per app category (personal, work, email, other), detected by the frontmost app's bundle ID |
 | Dictionary | Manual entries plus auto-learning (the field is read back via Accessibility and word-diffed; corrections get ✨). Dictionary words also drive CTC vocabulary boosting (NeMo CTC-WS, arXiv:2406.07096) so they are recognised from the audio itself |
 | Hands-free | Double-tap the hotkey to lock, tap again to finish, Esc cancels |
@@ -35,6 +35,7 @@ If you use the fn key as the hotkey, set System Settings → Keyboard → "Press
 | Snippets | Say a trigger ("my email"), get the expansion |
 | Context awareness | Text before/after the cursor and the app name go to the polish model so names and sentences continue correctly (toggle in Settings) |
 | Insights | Words, WPM, minutes saved vs 40 wpm typing, streak, top apps, 30-day chart |
+| Flow bar | Small black-and-white pill at the bottom of the active screen with Babji, the mascot, animating per state (bounces with your voice, thinks, pops, shakes). Soft sound cues on start, stop and paste |
 | Meeting detection | CoreAudio `kAudioDevicePropertyDeviceIsRunningSomewhere` on the default input |
 | Meeting audio | Mic via AVAudioEngine + system audio via ScreenCaptureKit, mixed at 16 kHz |
 | Speakers | Mic-dominant segments are "You"; the far side is diarized with FluidAudio (pyannote + WeSpeaker) into Speaker 2, 3, … Rename by clicking a name |

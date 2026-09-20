@@ -102,6 +102,7 @@ final class DictationController: ObservableObject {
             try recorder.start()
             isListening = true
             startedAt = Date()
+            SoundCues.shared.play("start")
             NotchController.shared.show(command ? .command : .listening)
         } catch {
             micMonitor?.selfRecording = false
@@ -115,6 +116,7 @@ final class DictationController: ObservableObject {
         let samples = recorder.stop()
         micMonitor?.selfRecording = false
         if cancelled { return }
+        SoundCues.shared.play("stop")
         let seconds = Double(samples.count) / 16000
         guard seconds > 0.35 else { NotchController.shared.hide(); return }
         busy = true
@@ -165,11 +167,13 @@ final class DictationController: ObservableObject {
                 lastResult = text
                 NSLog("Dictation final [%@/%@]: %@", category.rawValue, tone.rawValue, text)
                 TextInjector.paste(text)
+                SoundCues.shared.play("done")
                 CorrectionLearner.shared.didPaste(text)
                 let words = text.split(whereSeparator: { $0.isWhitespace }).count
                 StatsStore.shared.add(words: words, seconds: seconds, app: appName, category: category)
                 NotchController.shared.show(.done(text), autoHideAfter: 1.6)
             } catch {
+                SoundCues.shared.play("error")
                 NotchController.shared.show(.error(error.localizedDescription), autoHideAfter: 3)
             }
         }
