@@ -20,7 +20,7 @@ enum BabjiMood: String, CaseIterable {
 
     static func forNotch(_ s: NotchState) -> BabjiMood {
         switch s {
-        case .listening, .meetingRecording: return .speaking
+        case .listening, .locked, .command, .meetingRecording: return .speaking
         case .processing, .downloading: return .thinking
         case .done, .meetingDetected, .hidden: return .happy
         case .error: return .angry

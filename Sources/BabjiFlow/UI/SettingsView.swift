@@ -21,13 +21,16 @@ struct SettingsView: View {
                         .onChange(of: settings.model) { _, _ in Transcriber.shared.ensureLoaded() }
                     Text(modelStatus).font(.system(size: 11)).foregroundStyle(Theme.muted)
                     Toggle("Detect meetings when another app opens the mic", isOn: $settings.meetingDetection)
+                    Toggle("Command Mode (hold \(settings.hotkey.label) + Control, say an instruction, it edits the selected text)", isOn: $settings.commandMode)
+                    Toggle("Context awareness (read the text around the cursor so names and sentences continue correctly)", isOn: $settings.contextAwareness)
+                    Text("Hands-free: double-tap the hotkey to lock, tap again to finish, Esc to cancel.").font(.system(size: 11)).foregroundStyle(Theme.muted)
                 }
                 Card {
                     Text("AI PROVIDER (meeting notes, chat, optional dictation polish)").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.muted)
                     Picker("Provider", selection: $settings.provider) { ForEach(AIProvider.allCases) { Text($0.label).tag($0) } }.pickerStyle(.segmented).frame(width: 220)
                     if settings.provider == .openai {
                         HStack {
-                            SecureField(settings.hasOpenAIKey ? "Key saved in Keychain. Paste a new one to replace." : "sk-proj-…", text: $key)
+                            SecureField(settings.hasOpenAIKey ? "Key saved. Paste a new one to replace." : "sk-proj-…", text: $key)
                             Button("Save") { settings.setOpenAIKey(key); key = ""; keySaved = true }.disabled(key.isEmpty)
                             if settings.hasOpenAIKey { Button("Remove") { settings.setOpenAIKey(""); keySaved = false } }
                         }
@@ -39,7 +42,7 @@ struct SettingsView: View {
                         }
                     } else {
                         HStack {
-                            SecureField(settings.hasClaudeKey ? "Key saved in Keychain. Paste a new one to replace." : "sk-ant-…", text: $key)
+                            SecureField(settings.hasClaudeKey ? "Key saved. Paste a new one to replace." : "sk-ant-…", text: $key)
                             Button("Save") { settings.setClaudeKey(key); key = ""; keySaved = true }.disabled(key.isEmpty)
                             if settings.hasClaudeKey { Button("Remove") { settings.setClaudeKey(""); keySaved = false } }
                         }

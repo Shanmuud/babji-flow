@@ -66,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSLog("BabjiFlow launched; accessibility=\(Permissions.accessibilityGranted)")
         for sc in NSScreen.screens { NSLog("screen \(sc.localizedName) frame=\(sc.frame) safeTop=\(sc.safeAreaInsets.top) auxL=\(String(describing: sc.auxiliaryTopLeftArea)) auxR=\(String(describing: sc.auxiliaryTopRightArea))") }
         Transcriber.shared.ensureLoaded()
+        VocabularyBooster.shared.start()
         Transcriber.shared.$state.receive(on: DispatchQueue.main).sink { st in
             NSLog("Transcriber state: \(st)")
             switch st {

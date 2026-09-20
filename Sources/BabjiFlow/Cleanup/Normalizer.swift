@@ -12,12 +12,14 @@ enum Normalizer {
         var text = scaleWords(text)
         guard isAvailable else { return text }
         // Normalise per line so list markers and paragraph breaks survive.
-        return text.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+        text = text.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
             let s = String(line)
             guard !s.trimmingCharacters(in: .whitespaces).isEmpty else { return s }
             let out = TextNormalizer.shared.normalizeSentence(s)
             return out.isEmpty ? s : out
         }.joined(separator: "\n")
+        // NeMo sometimes leaves "19 thousand"; finish the job.
+        return scaleWords(text)
     }
 
     /// "19 thousand" -> "19,000", "2.5 million" -> "2,500,000" (Parakeet emits digits but keeps the scale word).

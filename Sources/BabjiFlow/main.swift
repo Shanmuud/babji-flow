@@ -10,13 +10,18 @@ if let i = args.firstIndex(of: "--engine"), i + 1 < args.count, let e = PolishEn
     Settings.shared.polishEngine = e
     atexit_b { Settings.shared.polishEngine = previous; UserDefaults.standard.synchronize() }
 }
-if let i = args.firstIndex(of: "--set-openai-key"), i + 1 < args.count {
+if let i = args.firstIndex(of: "--add-word"), i + 1 < args.count {
+    let parts = args[i + 1].split(separator: "=", maxSplits: 1).map(String.init)
+    DictionaryStore.shared.add(word: parts[0], misheard: parts.count > 1 ? parts[1].split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) } : [])
+    print("added \(parts[0]); dictionary now \(DictionaryStore.shared.entries.count) words")
+    exit(0)
+} else if let i = args.firstIndex(of: "--set-openai-key"), i + 1 < args.count {
     Settings.shared.setOpenAIKey(args[i + 1]); Settings.shared.provider = .openai
-    print("OpenAI key stored in Keychain: \(Settings.shared.hasOpenAIKey)")
+    print("OpenAI key stored: \(Settings.shared.hasOpenAIKey)")
     exit(0)
 } else if let i = args.firstIndex(of: "--set-key"), i + 1 < args.count {
     Settings.shared.setClaudeKey(args[i + 1])
-    print("Claude key stored in Keychain: \(Settings.shared.hasClaudeKey)")
+    print("Claude key stored: \(Settings.shared.hasClaudeKey)")
     exit(0)
 } else if let i = args.firstIndex(of: "--summarize"), i + 1 < args.count {
     let text = (try? String(contentsOfFile: args[i + 1], encoding: .utf8)) ?? ""
@@ -67,10 +72,16 @@ if let i = args.firstIndex(of: "--set-openai-key"), i + 1 < args.count {
             let samples = Array(UnsafeBufferPointer(start: out.floatChannelData![0], count: Int(out.frameLength)))
             print("audio: \(Double(samples.count) / 16000)s")
             Transcriber.shared.ensureLoaded()
+            VocabularyBooster.shared.start()
             while !Transcriber.shared.isReady {
                 if case .failed(let e) = Transcriber.shared.state { print("model failed: \(e)"); exit(1) }
                 try await Task.sleep(nanoseconds: 300_000_000)
             }
+            var waited = 0
+            while ["building", "downloading CTC model"].contains(VocabularyBooster.shared.status) || (VocabularyBooster.shared.status == "off" && !DictionaryStore.shared.entries.isEmpty && waited < 200) {
+                try await Task.sleep(nanoseconds: 300_000_000); waited += 1
+            }
+            print("boost: \(VocabularyBooster.shared.status)")
             let t0 = Date()
             let tr = try await Transcriber.shared.transcribe(samples)
             print("raw (\(String(format: "%.2f", Date().timeIntervalSince(t0)))s, conf \(tr.confidence)): \(tr.text)")

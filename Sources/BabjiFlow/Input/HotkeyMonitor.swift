@@ -4,8 +4,11 @@ import Carbon.HIToolbox
 /// Hold-to-talk hotkey. Uses a CGEvent tap (needs Accessibility) so the fn key can be
 /// caught reliably; falls back to NSEvent global monitors.
 final class HotkeyMonitor {
-    var onPress: (() -> Void)?
+    /// `command` is true when Control was held with the hotkey (Command Mode, like fn+ctrl in Wispr).
+    var onPress: ((_ command: Bool) -> Void)?
     var onRelease: (() -> Void)?
+    var onEscape: (() -> Void)?
+    private var escMonitor: Any?
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var globalMonitor: Any?
@@ -40,6 +43,9 @@ final class HotkeyMonitor {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] e in
             self?.handle(flags: e.cgEvent?.flags ?? [], keyCode: Int(e.keyCode)); return e
         }
+        escMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] e in
+            if e.keyCode == 53 { DispatchQueue.main.async { self?.onEscape?() } }
+        }
     }
 
     func stop() {
@@ -48,7 +54,8 @@ final class HotkeyMonitor {
         tap = nil; runLoopSource = nil
         if let g = globalMonitor { NSEvent.removeMonitor(g) }
         if let l = localMonitor { NSEvent.removeMonitor(l) }
-        globalMonitor = nil; localMonitor = nil
+        if let e = escMonitor { NSEvent.removeMonitor(e) }
+        globalMonitor = nil; localMonitor = nil; escMonitor = nil
     }
 
     private func handle(flags: CGEventFlags, keyCode: Int) {
@@ -60,13 +67,13 @@ final class HotkeyMonitor {
         case .rightCommand: down = flags.contains(.maskCommand) && (keyCode == 54 || isDown)
         case .leftControl: down = flags.contains(.maskControl) && (keyCode == 59 || isDown)
         }
-        // Ignore combos where other modifiers are held (e.g. fn+arrow) at press time.
+        // fn+ctrl = Command Mode. Other combos (fn+arrow, fn+cmd) are ignored.
         if down && !isDown {
-            let others: CGEventFlags = [.maskCommand, .maskShift, .maskControl, .maskAlternate]
-            let combo = flags.intersection(others)
-            if choice == .fn && !combo.isEmpty { return }
+            let command = flags.contains(.maskControl) && choice != .leftControl
+            let others: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate]
+            if choice == .fn && !flags.intersection(others).isEmpty { return }
             isDown = true
-            DispatchQueue.main.async { self.onPress?() }
+            DispatchQueue.main.async { self.onPress?(command) }
         } else if !down && isDown {
             isDown = false
             DispatchQueue.main.async { self.onRelease?() }

@@ -57,6 +57,14 @@ enum StylePolisher {
         - If the speaker says how to format (for example "in points", "as a list", "new paragraph", "numbered list"), apply that formatting and remove the instruction itself.
         - Preserve line breaks and bullet markers that are already present.
         - Never wrap the output in quotes or code fences.
+        Lists: when the speaker enumerates ("first… second… third", "number one… number two", "point one", "in points", "as a list", "make it bullets"), output one item per line starting with "- " (or "1. " if they said numbered). Drop the enumeration words themselves. A short lead-in sentence before the list is fine if they said one.
+        Examples:
+        Dictation: "so basically the plan is, write this in points, buy the parts for the arm, train the small vision model, and run the ultramarathon next sunday"
+        Output: "The plan:\n- Buy the parts for the arm\n- Train the small vision model\n- Run the ultramarathon next Sunday"
+        Dictation: "okay so three things, first, ship the build by friday, second, tell sara about the budget which is nineteen thousand, and third, book the flights"
+        Output: "Three things:\n- Ship the build by Friday\n- Tell Sara about the budget, which is 19,000\n- Book the flights"
+        Dictation: "hey um can you send me the deck, no wait, the figma link, before the call"
+        Output: "Hey, can you send me the Figma link before the call?"
         """
         switch tone {
         case .formal:
@@ -84,10 +92,20 @@ enum StylePolisher {
         return s
     }
 
-    static func polish(_ text: String, tone: Tone, category: StyleCategory) async -> String {
+    static func polish(_ text: String, tone: Tone, category: StyleCategory, appName: String? = nil,
+                       context: (before: String, selected: String, after: String) = ("", "", "")) async -> String {
         let wantsBullets = RuleCleaner.wantsBullets(text)
         let engine = resolveEngine()
-        let instr = instructions(tone: tone, category: category, wantsBullets: wantsBullets)
+        var instr = instructions(tone: tone, category: category, wantsBullets: wantsBullets)
+        if let appName, !appName.isEmpty { instr += "\nThe text will be typed into: \(appName)." }
+        let before = context.before.trimmingCharacters(in: .whitespacesAndNewlines)
+        let after = context.after.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !before.isEmpty || !after.isEmpty {
+            instr += "\nContext from the text field (for continuity and to spell names the way they appear; do NOT repeat or rewrite it). The dictation is inserted at the cursor."
+            if !before.isEmpty { instr += "\nBEFORE CURSOR:\n<<<\n\(before)\n>>>" }
+            if !after.isEmpty { instr += "\nAFTER CURSOR:\n<<<\n\(after)\n>>>" }
+            instr += "\nIf the text before the cursor ends mid-sentence, continue it (no leading capital, no leading space). If it is a list, continue the list."
+        }
         var out: String? = nil
         switch engine {
         case .apple:
@@ -142,7 +160,9 @@ enum StylePolisher {
     static func fallback(_ text: String, tone: Tone) -> String {
         var t = text
         if RuleCleaner.wantsBullets(t) {
-            t = t.replacingOccurrences(of: #"(?i)[,.]?\s*\b(write|put|give|do)( it| this| that)? (in|as) (bullet )?points\b[,.:]?\s*"#, with: "\n", options: .regularExpression)
+            // enumeration markers become line breaks
+            t = t.replacingOccurrences(of: #"(?i)[,.;]?\s*\b(firstly|first(?: of all)?|secondly|second|thirdly|third|fourth|fifth|lastly|finally|number (?:one|two|three|four|five|\d)|point (?:one|two|three|four|five|\d))\b[,.:]?\s*"#, with: "\n", options: .regularExpression)
+            t = t.replacingOccurrences(of: #"(?i)[,.]?\s*\b(write|put|give|do|make)( it| this| that| these| them)? (in|as) (bullet )?(points|a list|bullets)\b[,.:]?\s*"#, with: "\n", options: .regularExpression)
             t = t.replacingOccurrences(of: #"(?i)[,.]?\s*\b(in|as) (bullet )?points\b[,.:]?\s*"#, with: "\n", options: .regularExpression)
             t = t.replacingOccurrences(of: #"(?i)^\s*(so |ok |okay |basically |so basically )+"#, with: "", options: .regularExpression)
             var parts = t.split(whereSeparator: { $0 == "." || $0 == "\n" }).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }

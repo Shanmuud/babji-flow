@@ -5,6 +5,8 @@ import Combine
 enum NotchState: Equatable {
     case hidden
     case listening
+    case locked          // hands-free
+    case command         // command mode listening
     case processing(String)
     case done(String)
     case error(String)
@@ -96,7 +98,7 @@ final class NotchController: ObservableObject {
         // How far the pill extends beyond each side of the notch.
         let side: CGFloat
         switch state {
-        case .listening: side = 58
+        case .listening, .locked, .command: side = 66
         case .processing: side = 58
         case .downloading: side = 96
         case .done, .error: side = 150
@@ -153,6 +155,8 @@ struct NotchView: View {
     private var tint: Color {
         switch c.state {
         case .listening: return Theme.teal
+        case .locked: return Theme.mint
+        case .command: return Color(red: 1, green: 0.62, blue: 0.2)
         case .processing, .downloading: return Color(red: 0.62, green: 0.2, blue: 0.9)
         case .done: return Theme.mint
         case .error, .meetingDetected, .meetingRecording: return Theme.coral
@@ -164,6 +168,8 @@ struct NotchView: View {
         switch c.state {
         case .hidden: EmptyView()
         case .listening: LevelBars(level: c.level)
+        case .locked: HStack(spacing: 6) { LevelBars(level: c.level); Image(systemName: "lock.fill").font(.system(size: 9)).foregroundStyle(.white.opacity(0.6)) }
+        case .command: HStack(spacing: 6) { Image(systemName: "wand.and.stars").font(.system(size: 10, weight: .semibold)).foregroundStyle(Color(red: 1, green: 0.7, blue: 0.3)); LevelBars(level: c.level) }
         case .processing: Dots()
         case .done(let t): HStack(spacing: 6) { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.mint); Text(t).lineLimit(1).truncationMode(.tail) }
         case .error(let e): HStack(spacing: 6) { Image(systemName: "exclamationmark.circle.fill").font(.system(size: 11)).foregroundStyle(Theme.coral); Text(e).lineLimit(1) }
@@ -182,7 +188,7 @@ struct NotchView: View {
 
     @ViewBuilder private var trailing: some View {
         switch c.state {
-        case .hidden, .done, .error, .listening, .processing, .downloading: EmptyView()
+        case .hidden, .done, .error, .listening, .locked, .command, .processing, .downloading: EmptyView()
         case .meetingDetected:
             HStack(spacing: 5) {
                 Button("Record") { c.onRecordMeeting?() }.buttonStyle(NotchButton(primary: true))

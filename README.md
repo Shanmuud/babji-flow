@@ -29,7 +29,11 @@ If you use the fn key as the hotkey, set System Settings → Keyboard → "Press
 | Speech to text | FluidAudio + NVIDIA Parakeet TDT 0.6B v2 (English) or v3 (25 languages), CoreML on the Neural Engine, fully offline |
 | Cleanup | Fluid-only by default: Parakeet punctuation/casing → rules (fillers, "new line", "bullet point", "scratch that") → NeMo inverse text normalisation (numbers, times, money) → dictionary → tone. Optional extra polish via Apple Foundation Models or Claude |
 | Style | Formal / casual / very casual per app category (personal, work, email, other), detected by the frontmost app's bundle ID |
-| Dictionary | Manual entries plus auto-learning: after pasting, the text field is read back via Accessibility and word-diffed. Corrected words are added with ✨ |
+| Dictionary | Manual entries plus auto-learning (the field is read back via Accessibility and word-diffed; corrections get ✨). Dictionary words also drive CTC vocabulary boosting (NeMo CTC-WS, arXiv:2406.07096) so they are recognised from the audio itself |
+| Hands-free | Double-tap the hotkey to lock, tap again to finish, Esc cancels |
+| Command Mode | Hold hotkey + Control, say an instruction ("make this shorter", "turn into bullets"); the selected text is rewritten in place |
+| Snippets | Say a trigger ("my email"), get the expansion |
+| Context awareness | Text before/after the cursor and the app name go to the polish model so names and sentences continue correctly (toggle in Settings) |
 | Insights | Words, WPM, minutes saved vs 40 wpm typing, streak, top apps, 30-day chart |
 | Meeting detection | CoreAudio `kAudioDevicePropertyDeviceIsRunningSomewhere` on the default input |
 | Meeting audio | Mic via AVAudioEngine + system audio via ScreenCaptureKit, mixed at 16 kHz |
@@ -37,7 +41,7 @@ If you use the fn key as the hotkey, set System Settings → Keyboard → "Press
 | Summary | OpenAI GPT-5.5 (or Claude Opus 5) with a strict JSON schema: overview, themed sections, next steps, decisions, inferred speaker names |
 | Chat | Streaming answers grounded in the transcript; per-meeting and across all notes |
 
-Data lives in `~/Library/Application Support/BabjiFlow` (JSON + WAV). Nothing leaves the Mac except text sent to the AI provider you configured.
+Data lives in `~/Library/Application Support/BabjiFlow` (JSON + WAV). API keys are in `keys.json` there with 0600 permissions (the login Keychain re-prompts on every self-signed rebuild). Nothing leaves the Mac except text sent to the AI provider you configured.
 
 ## Notes
 

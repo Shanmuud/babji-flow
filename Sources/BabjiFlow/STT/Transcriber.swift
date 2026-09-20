@@ -68,10 +68,10 @@ final class Transcriber: ObservableObject {
     }
 
     /// Transcribe 16 kHz mono samples. `offset` shifts word timestamps (for chunked meetings).
-    func transcribe(_ samples: [Float], offset: Double = 0) async throws -> Transcription {
+    func transcribe(_ samples: [Float], offset: Double = 0, boost: Bool = true) async throws -> Transcription {
         guard let manager else { throw NSError(domain: "STT", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speech model not loaded yet"]) }
         // Pad very short clips so the encoder has enough context.
-        var s = samples
+        var s = boost ? AudioPrep.prepare(samples) : samples
         if s.count < 16000 { s.append(contentsOf: [Float](repeating: 0, count: 16000 - s.count)) }
         let layers = await manager.decoderLayerCount
         var state = try TdtDecoderState(decoderLayers: layers)
@@ -79,6 +79,12 @@ final class Transcriber: ObservableObject {
         let words = buildWordTimings(from: result.tokenTimings ?? []).map {
             TranscriptWord(word: $0.word, start: $0.startTime + offset, end: $0.endTime + offset)
         }
-        return Transcription(text: result.text.trimmingCharacters(in: .whitespacesAndNewlines), words: words, confidence: result.confidence)
+        var text = result.text
+        if boost {
+            let (boosted, detected) = await VocabularyBooster.shared.rescore(result, samples: s)
+            if boosted != result.text { NSLog("Vocabulary boost: %@ -> %@ (detected %@)", result.text, boosted, detected.joined(separator: ", ")) }
+            text = boosted
+        }
+        return Transcription(text: text.trimmingCharacters(in: .whitespacesAndNewlines), words: words, confidence: result.confidence)
     }
 }

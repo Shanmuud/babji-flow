@@ -96,6 +96,8 @@ final class Settings: ObservableObject {
     @Published var autoCleanup: Bool { didSet { d.set(autoCleanup, forKey: "autoCleanup") } }
     @Published var meetingDetection: Bool { didSet { d.set(meetingDetection, forKey: "meetingDetection") } }
     @Published var autoLearn: Bool { didSet { d.set(autoLearn, forKey: "autoLearn") } }
+    @Published var contextAwareness: Bool { didSet { d.set(contextAwareness, forKey: "contextAwareness") } }
+    @Published var commandMode: Bool { didSet { d.set(commandMode, forKey: "commandMode") } }
     @Published var styleSample: String { didSet { d.set(styleSample, forKey: "styleSample") } }
     @Published var tones: [StyleCategory: Tone] { didSet { saveTones() } }
     @Published var appCategories: [String: StyleCategory] { didSet { saveApps() } }
@@ -116,6 +118,8 @@ final class Settings: ObservableObject {
         autoCleanup = d.object(forKey: "autoCleanup") as? Bool ?? true
         meetingDetection = d.object(forKey: "meetingDetection") as? Bool ?? true
         autoLearn = d.object(forKey: "autoLearn") as? Bool ?? true
+        contextAwareness = d.object(forKey: "contextAwareness") as? Bool ?? true
+        commandMode = d.object(forKey: "commandMode") as? Bool ?? true
         styleSample = d.string(forKey: "styleSample") ?? ""
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-opus-5"
         provider = AIProvider(rawValue: d.string(forKey: "provider") ?? "") ?? .openai
@@ -177,30 +181,26 @@ final class Settings: ObservableObject {
     }()
 }
 
+/// API keys live in a 0600 file inside the app's data folder. The login Keychain re-prompts for a
+/// password every time a self-signed build changes, which made AI features hang silently.
 enum Keychain {
     static let service = "com.babji.flow"
-    /// Attribute-only query: does not touch the secret, so it never triggers a Keychain prompt.
-    static func exists(_ account: String) -> Bool {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                kSecAttrAccount as String: account, kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
-        var item: CFTypeRef?
-        return SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess
+    private static var url: URL { Settings.appSupport.appendingPathComponent("keys.json") }
+    private static var cache: [String: String]? = nil
+    private static func load() -> [String: String] {
+        if let c = cache { return c }
+        let d = (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode([String: String].self, from: $0) } ?? [:]
+        cache = d; return d
     }
-    static func read(_ account: String) -> String? {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                kSecAttrAccount as String: account, kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+    private static func store(_ d: [String: String]) {
+        cache = d
+        if let data = try? JSONEncoder().encode(d) {
+            try? data.write(to: url, options: .atomic)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        }
     }
-    static func write(_ account: String, _ value: String) {
-        delete(account)
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                kSecAttrAccount as String: account, kSecValueData as String: Data(value.utf8)]
-        SecItemAdd(q as CFDictionary, nil)
-    }
-    static func delete(_ account: String) {
-        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
-        SecItemDelete(q as CFDictionary)
-    }
+    static func exists(_ account: String) -> Bool { !(load()[account] ?? "").isEmpty }
+    static func read(_ account: String) -> String? { let v = load()[account]; return (v ?? "").isEmpty ? nil : v }
+    static func write(_ account: String, _ value: String) { var d = load(); d[account] = value; store(d) }
+    static func delete(_ account: String) { var d = load(); d.removeValue(forKey: account); store(d) }
 }

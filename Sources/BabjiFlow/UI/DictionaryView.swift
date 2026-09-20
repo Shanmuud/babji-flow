@@ -7,6 +7,9 @@ struct DictionaryView: View {
     @State private var showAdd = false
     @State private var editing: DictionaryEntry?
     @State private var showBanner = true
+    @ObservedObject var snippets = SnippetStore.shared
+    @State private var showAddSnippet = false
+    @State private var editingSnippet: Snippet?
 
     var filtered: [DictionaryEntry] {
         store.entries.filter { e in
@@ -18,15 +21,31 @@ struct DictionaryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack { PageTitle(text: "Dictionary"); Spacer(); Button("Add new") { showAdd = true }.buttonStyle(PillButton()) }
+                HStack { PageTitle(text: filter == 3 ? "Snippets" : "Dictionary"); Spacer(); Button(filter == 3 ? "New snippet" : "Add new") { if filter == 3 { showAddSnippet = true } else { showAdd = true } }.buttonStyle(PillButton()) }
                 HStack(spacing: 18) {
                     Tab(label: "All", on: filter == 0) { filter = 0 }
                     Tab(label: "Manual", on: filter == 1) { filter = 1 }
                     Tab(label: "Learned ✨", on: filter == 2) { filter = 2 }
+                    Tab(label: "Snippets", on: filter == 3) { filter = 3 }
                     Spacer()
                     TextField("Search", text: $search).textFieldStyle(.roundedBorder).frame(width: 180)
                 }
-                if showBanner {
+                if filter == 3 {
+                    Hero(title: "Say it once, paste it forever.", subtitle: "Snippets expand when you speak the trigger: say \"my email\" and Babji types the full address. Great for links, addresses, sign-offs and bios.", mascot: .speaking) { EmptyView() }
+                    Card {
+                        if snippets.snippets.isEmpty { Text("No snippets yet.").foregroundStyle(Theme.muted).font(.system(size: 13)) }
+                        ForEach(snippets.snippets) { s in
+                            HStack(alignment: .top, spacing: 10) {
+                                Text(s.trigger).font(.system(size: 13, weight: .semibold)).frame(width: 140, alignment: .leading)
+                                Text(s.expansion).font(.system(size: 13)).foregroundStyle(Theme.muted).lineLimit(2)
+                                Spacer()
+                                Button { editingSnippet = s } label: { Image(systemName: "pencil") }.buttonStyle(.plain)
+                                Button { snippets.remove(s) } label: { Image(systemName: "trash") }.buttonStyle(.plain)
+                            }.padding(.vertical, 6)
+                            if s.id != snippets.snippets.last?.id { Divider() }
+                        }
+                    }
+                } else if showBanner {
                     Hero(title: "Babji spells the way you do.", subtitle: "Correct a spelling once in any app and Babji learns it automatically (marked ✨). Or add personal terms, company jargon and uncommon names here so they are spelled right in dictations and meeting notes.", mascot: .happy) {
                         HStack(spacing: 8) {
                             Button("Add new word") { showAdd = true }.buttonStyle(PillButton(dark: false))
@@ -39,7 +58,7 @@ struct DictionaryView: View {
                             .buttonStyle(.plain).foregroundStyle(Color.black.opacity(0.6)).padding(10)
                     }
                 }
-                Card {
+                if filter != 3 { Card {
                     if filtered.isEmpty { Text(store.entries.isEmpty ? "No words yet." : "No matches.").foregroundStyle(Theme.muted).font(.system(size: 13)) }
                     ForEach(filtered) { e in
                         HStack(spacing: 8) {
@@ -53,9 +72,11 @@ struct DictionaryView: View {
                         }.padding(.vertical, 6)
                         if e.id != filtered.last?.id { Divider() }
                     }
-                }
+                } }
             }.padding(24)
         }
+        .sheet(isPresented: $showAddSnippet) { SnippetEditor(snippet: Snippet(trigger: "", expansion: "")) { snippets.add(trigger: $0.trigger, expansion: $0.expansion) } }
+        .sheet(item: $editingSnippet) { s in SnippetEditor(snippet: s) { snippets.update($0) } }
         .sheet(isPresented: $showAdd) { EntryEditor(entry: DictionaryEntry(word: "")) { store.add(word: $0.word, misheard: $0.misheard) } }
         .sheet(item: $editing) { e in EntryEditor(entry: e) { store.update($0) } }
     }
@@ -89,5 +110,21 @@ struct EntryEditor: View {
                 onSave(entry); dismiss()
             }.keyboardShortcut(.defaultAction).disabled(entry.word.trimmingCharacters(in: .whitespaces).isEmpty) }
         }.padding(20).frame(width: 420).onAppear { misheard = entry.misheard.joined(separator: ", ") }
+    }
+}
+
+
+struct SnippetEditor: View {
+    @Environment(\.dismiss) var dismiss
+    @State var snippet: Snippet
+    var onSave: (Snippet) -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(snippet.trigger.isEmpty ? "New snippet" : "Edit snippet").font(.headline)
+            TextField("Trigger phrase you'll say (e.g. my email)", text: $snippet.trigger)
+            Text("Expands to").font(.system(size: 11)).foregroundStyle(Theme.muted)
+            TextEditor(text: $snippet.expansion).font(.system(size: 13)).frame(height: 110).scrollContentBackground(.hidden).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
+            HStack { Spacer(); Button("Cancel") { dismiss() }; Button("Save") { onSave(snippet); dismiss() }.keyboardShortcut(.defaultAction).disabled(snippet.trigger.trimmingCharacters(in: .whitespaces).isEmpty || snippet.expansion.isEmpty) }
+        }.padding(20).frame(width: 440)
     }
 }
